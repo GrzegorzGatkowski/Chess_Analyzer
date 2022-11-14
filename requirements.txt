@@ -1,1 +1,8 @@
-streamlit==1.8.1
+altair
+pandas
+streamlit
+chess.com
+requests
+matplotlib
+seaborn
+numpy
