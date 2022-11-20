@@ -1,5 +1,4 @@
 import requests
-import altair as alt
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import RendererAgg
@@ -7,50 +6,12 @@ from matplotlib.figure import Figure
 import seaborn as sns
 import streamlit as st
 import numpy as np
-from chessdotcom import get_player_game_archives
+from handlers import get_archives, get_games, print_kde, print_rating, get_years_list, print_performance, print_distribution
+
 
 st.set_page_config(layout="wide")
 
 _lock = RendererAgg.lock
-
-
-### Helper Methods ###
-def get_archives(player_name):
-    """
-    Get list of URLs for monthly archives games for player.
-    Parameters
-    ----------
-    player_name : str
-        Username in chess.com
-
-    Returns
-    -------
-    List of URLs for monthly archives in ascending chronological order.
-    """
-    return get_player_game_archives(player_name).json['archives']
-
-
-def get_games(monthly_games, year):
-    """
-    Get Dataframe with all games by year.
-    Parameters
-    ----------
-    monthly_games : List of URLs for monthly archives in ascending chronological order.
-        
-    year : int
-        
-
-    Returns
-    -------
-    Dataframe contains all games by year.
-    """
-    all_months = pd.DataFrame()
-    for url in monthly_games:
-        if url[-7:-3]==year:
-                response = requests.get(url).json()['games']
-                all_months=pd.concat([all_months, pd.json_normalize(response, max_level=1)])
-    return all_months
-
 
 sns.set_style("darkgrid")
 row0_spacer1, row0_1, row0_spacer2, row0_2, row0_spacer3 = st.columns(
@@ -58,7 +19,6 @@ row0_spacer1, row0_1, row0_spacer2, row0_2, row0_spacer3 = st.columns(
 )
 
 row0_1.title("Analyzing Chess.com profile.")
-
 
 with row0_2:
     st.write("")
@@ -86,7 +46,6 @@ with row2_1:
             "Hikaru",
             "MagnusCarlsen",
             "DanielNaroditsky"
-
         ),
     )
     st.markdown("**or**")
@@ -98,10 +57,7 @@ with row2_1:
     
     default_year = st.selectbox(
         "Select one year and press 'ENTER'",
-        (
-            "2020",
-            "2021",
-            "2022"            
+        (get_years_list(user_input)          
         ),
     )
     
@@ -116,7 +72,6 @@ with line1_1:
 ### Data Import ###
 data = get_archives(player_name = player)
 all_months = pd.DataFrame()
-
 all_months = get_games(data, default_year)
 
 ### Data Cleaning ###
@@ -136,35 +91,15 @@ row3_space1, row3_1, row3_space2, row3_2, row3_space3 = st.columns(
 with row3_1, _lock:
     st.subheader("Overall distribution")
     if has_records:
-        fig = Figure()
-        ax = fig.subplots()
-        sns.kdeplot(data=all_months, x = "opponent's rating", hue = 'time_class', fill = True, ax = ax)
-        ax.set_xlabel("Rating")
-        ax.set_ylabel("Density")
-        st.pyplot(fig)
+        print_kde(DataFrame = all_months, x = "opponent's rating", hue = 'time_class', fill = True, xlabel = 'Rating', ylabel = 'Density')
+        print_rating(all_months["opponent's rating"])
     else:
         st.markdown("We do not have information to find out about your games.")
-
-    avg_opp_rating = all_months["opponent's rating"].mean().round()
-    max_opp_rating = all_months["opponent's rating"].max()
-    st.markdown(
-        '''Average opponent rating: **{}**.  
-        The highest opponent rating: **{}**.'''.format(
-            avg_opp_rating,
-            max_opp_rating,
-            unsafe_allow_html=True
-        )
-    )
 
 with row3_2, _lock:
     st.subheader("Games played by time control")
     if has_records:
-        fig = Figure()
-        ax = fig.subplots()
-        sns.countplot(data=all_months, y = "time_class", order = all_months['time_class'].value_counts().index, ax = ax)
-        ax.set_ylabel("Game type")
-        ax.set_xlabel("Count")
-        st.pyplot(fig)
+        print_distribution(DataFrame=all_months, column='time_class')
     else:
         st.markdown("We do not have information to find out about your games.")
     
@@ -192,15 +127,12 @@ row4_1, row4_space2 = st.columns(
 
 with row4_1, _lock:
     st.subheader("Performance")
-    df = all_months.groupby('time_class').resample('D', on = 'end_time')[[player+"'s rating"]].mean().reset_index()
+    df = all_months.groupby('time_class').resample('3D', on = 'end_time')[[player+"'s rating"]].mean().reset_index()
     df_wide = df.pivot("end_time", "time_class", player+"'s rating")
+    df_wide = df_wide.fillna(method="bfill")
     df_wide = df_wide.fillna(method="ffill")
     if has_records:
-        fig = Figure()
-        ax = fig.subplots()
-        sns.lineplot(data=df_wide, ax = ax)
-        #ax.set_xticklabels()
-        st.pyplot(fig)  
+        print_performance(data=df_wide) 
 
 
 

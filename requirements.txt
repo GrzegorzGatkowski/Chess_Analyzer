@@ -1,7 +1,5 @@
-altair
 pandas
 streamlit
-chess.com
 requests
 matplotlib
 seaborn
