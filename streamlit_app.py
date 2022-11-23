@@ -71,18 +71,21 @@ with line1_1:
 
 ### Data Import ###
 data = get_archives(player_name = player)
-all_months = pd.DataFrame()
 all_months = get_games(data, default_year)
 
 ### Data Cleaning ###
 all_months.drop([ 'url', 'pgn', 'tcn', 'uuid', 'initial_setup', 'fen', 'white.@id', 'white.uuid', 'black.@id', 'black.uuid'], axis = 1, inplace = True)
 all_months[player+"'s rating"] = np.where(all_months['white.username']==player,all_months['white.rating'],all_months['black.rating'])
 all_months["opponent's rating"] = np.where(all_months['white.username']!=player,all_months['white.rating'],all_months['black.rating'])
-all_months[player+" accuracy"] = np.where(all_months['white.username']==player,all_months['accuracies.white'],all_months['accuracies.black'])
-all_months["Opponent accuracy"] = np.where(all_months['white.username']!=player,all_months['accuracies.white'],all_months['accuracies.black'])
+if 'accuracies.white' in all_months:
+    all_months[player+" accuracy"] = np.where(all_months['white.username']==player,all_months['accuracies.white'],all_months['accuracies.black'])
+    all_months["Opponent accuracy"] = np.where(all_months['white.username']!=player,all_months['accuracies.white'],all_months['accuracies.black'])
+    has_accuracy = True
+else:
+    has_accuracy = False
+
 all_months.end_time = pd.to_datetime(all_months.end_time,unit='s')
 has_records = any(all_months['end_time'])
-
 st.write("")
 row3_space1, row3_1, row3_space2, row3_2, row3_space3 = st.columns(
     (0.1, 1, 0.1, 1, 0.1)
@@ -132,7 +135,7 @@ with row4_1, _lock:
     df_wide = df_wide.fillna(method="bfill")
     df_wide = df_wide.fillna(method="ffill")
     if has_records:
-        print_performance(data=df_wide) 
+        print_performance(data=df_wide, xlabel = 'Time', ylabel = 'Rating') 
 
 
 
@@ -145,6 +148,8 @@ row5_1, row5_space2 = st.columns(
 
 with row5_1, _lock:
     st.subheader("Accuracy")
-    if has_records:
+    if has_accuracy:
         fig = sns.lmplot(data=all_months, x = "opponent's rating", y = player+" accuracy", col = 'time_class', scatter_kws={"color":"indigo","alpha":0.2,"s":10}, facet_kws=dict(sharex=False, sharey=False), col_wrap = 2)
-        st.pyplot(fig)
+
+    else:
+        st.markdown("You did not played any games with accuracy analysis.")
