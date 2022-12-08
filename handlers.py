@@ -105,20 +105,61 @@ def print_kde(DataFrame, x, hue, fill = True, xlabel = None, ylabel = None):
     ax.set_ylabel(ylabel)
     st.pyplot(fig)
 
-def print_distribution(DataFrame, column):
-        fig = Figure()
-        ax = fig.subplots()
-        sns.countplot(data=DataFrame, y = column, order = DataFrame[column].value_counts().index, palette='pastel', ax = ax)
-        ax.set_ylabel("Game type")
-        ax.set_xlabel("Count")
-        st.pyplot(fig)
+def print_distribution(DataFrame, column, xlabel = None, ylabel = None):
+    """
+    Show the counts of observations in each categorical bin using bars.
+    Parameters
+    ----------
+    DataFrame : pandas.DataFrame
+        Dataframe contains all games by year.
+        
+    y : names of variables in data
+        Column name to count.
+
+    xlabel : str
+        The label text.
+
+    ylabel : str
+        The label text.
+        
+
+    Returns
+    -------
+    matplotlib.axes.Axes
+        Returns the Axes object with the plot drawn onto it.
+    """        
+    fig = Figure()
+    ax = fig.subplots()
+    sns.countplot(data=DataFrame, y = column, order = DataFrame[column].value_counts().index, palette='pastel', ax = ax)
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    st.pyplot(fig)
 
 def print_performance(data, xlabel = None, ylabel = None):
+    """
+    Show the counts of observations in each categorical bin using bars.
+    Parameters
+    ----------
+    data : pandas.pivot_table
+        An Excel style pivot table
+
+    xlabel : str
+        The label text.
+
+    ylabel : str
+        The label text.
+        
+
+    Returns
+    -------
+    matplotlib.axes.Axes
+        The matplotlib axes containing the plot.
+    """ 
     fig = Figure()
     ax = fig.subplots()
     sns.lineplot(data, ax = ax, dashes = False, palette='pastel')
-    ax.set_ylabel("Rating")
-    ax.set_xlabel("Time")
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
     st.pyplot(fig) 
 
 

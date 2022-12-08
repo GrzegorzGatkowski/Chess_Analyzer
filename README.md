@@ -1,6 +1,11 @@
 # Chess_Analyzer
 
 This app analyzes data about your chess.com account, and looking at the distribution of the opponents rating.
+Click here to get to the deployed [Chess_analyzer app](https://grzegorzgatkowski-chess-analyzer-streamlit-app-v6it8q.streamlit.app/)
+
+* I am really into chess, so made streamlit visualization chess stats app.  
+I used [Chess.com official API](https://www.chess.com/news/view/published-data-api).  
+This API allows you to view all sorts of chess.com information through Python, including leaderboards, player rankings, moves in a game, etc.  
 
 Built with ❤️ by [grzegorzgatkowski](https://github.com/grzegorzgatkowski)
 

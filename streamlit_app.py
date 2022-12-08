@@ -34,7 +34,7 @@ with row1_1:
         "Hey there! Welcome to Chess Analysis App. This app analyzes data about your chess.com account, and looking at the distribution of the opponents rating."
     )
     st.markdown(
-        "**To begin, please enter the [chess.com](https://www.chess.com/) username (or just use mine!).** 👇"
+        "**To begin, please enter the [chess.com](https://www.chess.com/) username (or just use mine!).** 👇 Note: It may take up to one minute to load data."
     )
 
 row2_spacer1, row2_1, row2_spacer2 = st.columns((0.1, 3.2, 0.1))
@@ -102,7 +102,7 @@ with row3_1, _lock:
 with row3_2, _lock:
     st.subheader("Games played by time control")
     if has_records:
-        print_distribution(DataFrame=all_months, column='time_class')
+        print_distribution(DataFrame=all_months, column='time_class', xlabel = "Game type", ylabel = 'Count')
     else:
         st.markdown("We do not have information to find out about your games.")
     
@@ -150,6 +150,6 @@ with row5_1, _lock:
     st.subheader("Accuracy")
     if has_accuracy:
         fig = sns.lmplot(data=all_months, x = "opponent's rating", y = player+" accuracy", col = 'time_class', scatter_kws={"color":"indigo","alpha":0.2,"s":10}, facet_kws=dict(sharex=False, sharey=False), col_wrap = 2)
-
+        st.pyplot(fig) 
     else:
         st.markdown("You did not played any games with accuracy analysis.")
