@@ -145,7 +145,6 @@ row5_1, row5_space2 = st.columns(
     (2,0.1)
 )
 
-
 with row5_1, _lock:
     st.subheader("Accuracy")
     if has_accuracy:

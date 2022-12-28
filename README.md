@@ -1,13 +1,13 @@
 # Chess_Analyzer
 
-This app analyzes data about your chess.com account, and looking at the distribution of the opponents rating.
+This application allows users to view statistics about their chess.com account, including a distribution of the ratings of their opponents. It uses the chess.com API and seaborn for visualization.
 Click here to get to the deployed [Chess_analyzer app](https://grzegorzgatkowski-chess-analyzer-streamlit-app-v6it8q.streamlit.app/)
 
 * I am really into chess, so made streamlit visualization chess stats app.  
 I used [Chess.com official API](https://www.chess.com/news/view/published-data-api).  
 This API allows you to view all sorts of chess.com information through Python, including leaderboards, player rankings, moves in a game, etc.  
 
-Built with ❤️ by [grzegorzgatkowski](https://github.com/grzegorzgatkowski)
+Built with by [grzegorzgatkowski](https://github.com/grzegorzgatkowski)
 
 ## What's this?
 
@@ -58,15 +58,3 @@ make test-e2e-baseline
 # After running tests, display the coverage html report on localhost
 make coverage
 ```
-## Deploy
-
-For the easiest experience, deploy to [Streamlit Cloud](https://streamlit.io/cloud)
-
-For other options, see [Streamilt deployment wiki](https://discuss.streamlit.io/t/streamlit-deployment-guide-wiki/5099)
-
-## Credits
-
-This package was created with Cookiecutter and the `gerardrbentley/cookiecutter-streamlit` project template.
-
-- Cookiecutter: [https://github.com/audreyr/cookiecutter](https://github.com/audreyr/cookiecutter)
-- `gerardrbentley/cookiecutter-streamlit`: [https://github.com/gerardrbentley/cookiecutter-streamlit](https://github.com/gerardrbentley/cookiecutter-streamlit)
