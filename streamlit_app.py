@@ -24,7 +24,7 @@ with row0_2:
     st.write("")
 
 row0_2.subheader(
-    "Streamlit App by [Grzegorz Gątkowski](https://www.linkedin.com/in/grzegorz-g-811727125/)"
+    "Streamlit App by [Grzegorz Gątkowski](https://www.linkedin.com/in/grzegorzgatkowski/)"
 )
 
 row1_spacer1, row1_1, row1_spacer2 = st.columns((0.1, 3.2, 0.1))

@@ -9,49 +9,77 @@ from matplotlib.figure import Figure
 
 def get_archives(player_name):
     """
-    Get list of URLs for monthly archives games for player.
+    Fetches and returns a list of URLs for monthly archives of games for a given player from Chess.com API.
+    
+    :param player_name: The username of the player.
+    :return: A list of URLs for monthly archives.
+    """
+    base_url = f"https://api.chess.com/pub/player/{player_name}/games/archives"
+    
+    try:
+        response = requests.get(base_url)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        data = response.json()
+        
+        archives_urls = data.get("archives", [])
+        return archives_urls
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching archives for player {player_name}: {e}")
+        return []
+    except ValueError as ve:
+        print(f"Error parsing JSON response: {ve}")
+        return []
+
+
+def get_years_list(player_name):
+    """
+    Fetches a list of years from a player's game archives on Chess.com.
+    
+    :param player_name: The username of the player.
+    :return: A list of years as strings, or None if an error occurs.
     """
     try:
         response = requests.get(f"https://api.chess.com/pub/player/{player_name}/games/archives")
         response.raise_for_status()
+
+        if response.status_code == 200:
+            try:
+                year = response.json()["archives"][0][-7:-3]
+                first_year = int(year)
+                list_year = [str(x) for x in range(first_year, 2023)]
+                return list_year
+            except (KeyError, TypeError, ValueError):
+                return None
     except requests.RequestException:
         return None
-
-    try:
-        archives = response.json()
-        return archives["archives"]
-    except (KeyError, TypeError, ValueError):
-        return None
-
-
-def get_years_list(player_name):
-    try:
-        response = requests.get(f"https://api.chess.com/pub/player/{player_name}/games/archives")
-        response.raise_for_status()
-    except requests.RequestException:
-        return None
-
-    try:
-        year = response.json()["archives"][0][-7:-3]
-        first_year = int(year)
-        list_year = [*range(first_year, 2023)]
-        str_list = [str(x) for x in list_year]
-        return str_list
-    except (KeyError, TypeError, ValueError):
-        return None  
 
 
 def get_games(monthly_games, year):
     """
-    Get Dataframe with all games by year.
+    Fetches and returns a DataFrame containing all games for a given year from a list of monthly game URLs.
+    
+    :param monthly_games: List of URLs for monthly game archives.
+    :param year: The year for which to filter the games.
+    :return: A pandas DataFrame containing the games for the specified year.
     """
-    all_months = pd.DataFrame()
+    all_games = pd.DataFrame()
+    
     for url in monthly_games:
         if url[-7:-3] == year:
-            response = requests.get(url).json()['games']
-            all_months = pd.concat([all_months, pd.json_normalize(response, max_level=1)])
-    return all_months
-
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+                games_data = response.json().get('games', [])
+                
+                if games_data:
+                    month_df = pd.json_normalize(games_data, max_level=1)
+                    all_games = pd.concat([all_games, month_df], ignore_index=True)
+            except requests.RequestException as e:
+                print(f"Error fetching games from URL {url}: {e}")
+            except (KeyError, TypeError, ValueError) as e:
+                print(f"Error processing games data from URL {url}: {e}")
+    
+    return all_games
 
 def print_kde(DataFrame, x, hue, fill=True, xlabel=None, ylabel=None):
     """
