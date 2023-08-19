@@ -1,154 +1,121 @@
-import requests
-import pandas as pd
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_agg import RendererAgg
-from matplotlib.figure import Figure
-import seaborn as sns
+# Import statements should be organized alphabetically.
+import datetime
 import streamlit as st
-import numpy as np
-from handlers import get_archives, get_games, print_kde, print_rating, get_years_list, print_performance, print_distribution
+import seaborn as sns
+from matplotlib.backends.backend_agg import RendererAgg
+from data_cleaner import ChessDataCleaner
+from data_visualizer import ChessDataVisualizer
+from fetch_games import ChessAPI
 
-
+# Set page configuration
 st.set_page_config(layout="wide")
 
+# Use underscores for variable naming for readability
 _lock = RendererAgg.lock
 
+# Set seaborn style
 sns.set_style("darkgrid")
-row0_spacer1, row0_1, row0_spacer2, row0_2, row0_spacer3 = st.columns(
-    (0.1, 2, 0.2, 0.6, 0.1)
-)
 
-row0_1.title("Analyzing Chess.com profile.")
+# Create columns for layout
+row0_spacer1, row0_1, row0_spacer2, row0_2, row0_spacer3 = st.columns((0.1, 2, 0.2, 0.6, 0.1))
 
+# Title of the app
+row0_1.title("Analyzing Chess.com Profile")
+
+# Subheader with app creator's information
 with row0_2:
     st.write("")
 
-row0_2.subheader(
-    "Streamlit App by [Grzegorz Gątkowski](https://www.linkedin.com/in/grzegorzgatkowski/)"
-)
+row0_2.subheader("Streamlit App by [Grzegorz Gątkowski](https://www.linkedin.com/in/grzegorzgatkowski/)")
 
+# Create columns for the main content
 row1_spacer1, row1_1, row1_spacer2 = st.columns((0.1, 3.2, 0.1))
 
+# Introduction and input instructions
 with row1_1:
     st.markdown(
-        "Hey there! Welcome to Chess Analysis App. This app analyzes data about your chess.com account, and looking at the distribution of the opponents rating."
+        "Hey there! Welcome to the Chess Analysis App. This app analyzes data about your chess.com account and looks at the distribution of the opponents' ratings."
     )
     st.markdown(
-        "**To begin, please enter the [chess.com](https://www.chess.com/) username (or just use mine!).** 👇 Note: It may take up to one minute to load data."
+        "**To begin, please enter the [chess.com](https://www.chess.com/) username (or use one of the default usernames).** 👇 Note: It may take up to one minute to load data."
     )
 
+# Create columns for user input
 row2_spacer1, row2_1, row2_spacer2 = st.columns((0.1, 3.2, 0.1))
 with row2_1:
-    default_username = st.selectbox(
-        "Select one and press 'ENTER'",
-        (
-            "grzegorzgatkowski",
-            "Hikaru",
-            "MagnusCarlsen",
-            "DanielNaroditsky"
-        ),
-    )
+    # Default usernames and user input field
+    default_usernames = [
+        "Hikaru",
+        "GothamChess",
+        "DanielNaroditsky",
+        "nihalsarin",
+        "Polish_fighter3000",
+    ]
+    default_username = st.selectbox("Select a default username", default_usernames)
     st.markdown("**or**")
-    user_input = st.text_input(
-        "Input your own Name and press 'ENTER'"
-    )
+    user_input = st.text_input("Input your own username")
+
+    # Use a default username if the user didn't input one
     if not user_input:
         user_input = f"{default_username}"
-    
-    default_year = st.selectbox(
-        "Select one year and press 'ENTER'",
-        (get_years_list(user_input)          
-        ),
-    )
-    
+
+    # Fetch player data and date-related variables
+    player_info = ChessAPI.fetch_player_data(user_input)
+    joined_date = datetime.datetime.fromtimestamp(player_info['joined'])
+    current_date = datetime.datetime.now()
+    current_year = current_date.year
+    current_month = current_date.month
+    year_range = list(range(current_year, joined_date.year - 1, -1))
+
+    year = st.selectbox("Select a year", year_range)
+    if year == current_year:
+        month_range = ["{:02d}".format(i) for i in range(current_month, 0, -1)]
+    else:
+        # Allow all months if the joined year is not the current year
+        month_range = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
+    month = st.selectbox("Select a month", month_range)
+
+# Define the player name
 player = user_input
 
+# Create columns for header
 line1_spacer1, line1_1, line1_spacer2 = st.columns((0.1, 3.2, 0.1))
 
 with line1_1:
-    st.header("Analyzing the opponents ratings distrubution of: **{}**".format(player))
+    st.header("Analyzing the Opponents' Ratings Distribution of: **{}**".format(player))
 
+# Define the player name
+player_name = user_input
 
-### Data Import ###
-data = get_archives(player_name = player)
-all_months = get_games(data, default_year)
+# Fetch player's game data for the selected year and month
+df = ChessAPI.fetch_games(player_name, year, month)
 
-### Data Cleaning ###
-all_months.drop([ 'url', 'pgn', 'tcn', 'uuid', 'initial_setup', 'fen', 'white.@id', 'white.uuid', 'black.@id', 'black.uuid'], axis = 1, inplace = True)
-all_months[player+"'s rating"] = np.where(all_months['white.username']==player,all_months['white.rating'],all_months['black.rating'])
-all_months["opponent's rating"] = np.where(all_months['white.username']!=player,all_months['white.rating'],all_months['black.rating'])
-if 'accuracies.white' in all_months:
-    all_months[player+" accuracy"] = np.where(all_months['white.username']==player,all_months['accuracies.white'],all_months['accuracies.black'])
-    all_months["Opponent accuracy"] = np.where(all_months['white.username']!=player,all_months['accuracies.white'],all_months['accuracies.black'])
-    has_accuracy = True
+# Check if data is available
+if not df.empty:
+    data_available = True
+    cleaner = ChessDataCleaner(df, player_name)
+    cleaned_data = cleaner.clean_data()
+
+    # Create an instance of ChessDataVisualizer
+    visualizer = ChessDataVisualizer(cleaned_data, player_name)
+
+    st.write("")
+    row3_space1, row3_1, row3_space2, row3_2, row3_space3 = st.columns(
+        (0.1, 1, 0.1, 1, 0.1)
+    )
 else:
-    has_accuracy = False
+    data_available = False
 
-all_months.end_time = pd.to_datetime(all_months.end_time,unit='s')
-has_records = any(all_months['end_time'])
 st.write("")
 row3_space1, row3_1, row3_space2, row3_2, row3_space3 = st.columns(
     (0.1, 1, 0.1, 1, 0.1)
 )
 
 with row3_1, _lock:
-    st.subheader("Overall distribution")
-    if has_records:
-        print_kde(DataFrame = all_months, x = "opponent's rating", hue = 'time_class', fill = True, xlabel = 'Rating', ylabel = 'Density')
-        print_rating(all_months["opponent's rating"])
+    st.subheader("Overall Distribution")
+
+    if data_available:
+        # Visualize Win-Loss Distribution
+        visualizer.print_kde(x="opponent's rating", hue='time_class')
     else:
-        st.markdown("We do not have information to find out about your games.")
-
-with row3_2, _lock:
-    st.subheader("Games played by time control")
-    if has_records:
-        print_distribution(DataFrame=all_months, column='time_class', xlabel = "Game type", ylabel = 'Count')
-    else:
-        st.markdown("We do not have information to find out about your games.")
-    
-    st.markdown(
-        "It looks like you've played a grand total of **{}** games, including:".format(all_months.end_time.count())
-        )
-    st.markdown(
-        "- **{}** blitz games,".format(all_months[all_months.time_class == 'blitz'].shape[0])
-        )
-    st.markdown(
-        "- **{}** rapid game,".format(all_months[all_months.time_class == 'rapid'].shape[0])
-        )
-    st.markdown(
-        "- **{}** bullet game,".format(all_months[all_months.time_class == 'bullet'].shape[0])
-        )
-    st.markdown(
-        "- **{}** daily games.".format(all_months[all_months.time_class == 'daily'].shape[0])
-        )
-
-    st.write("")
-row4_1, row4_space2 = st.columns(
-    (2,0.1)
-)
-
-
-with row4_1, _lock:
-    st.subheader("Performance")
-    df = all_months.groupby('time_class').resample('3D', on = 'end_time')[[player+"'s rating"]].mean().reset_index()
-    df_wide = df.pivot("end_time", "time_class", player+"'s rating")
-    df_wide = df_wide.fillna(method="bfill")
-    df_wide = df_wide.fillna(method="ffill")
-    if has_records:
-        print_performance(data=df_wide, xlabel = 'Time', ylabel = 'Rating') 
-
-
-
-
-    st.write("")
-row5_1, row5_space2 = st.columns(
-    (2,0.1)
-)
-
-with row5_1, _lock:
-    st.subheader("Accuracy")
-    if has_accuracy:
-        fig = sns.lmplot(data=all_months, x = "opponent's rating", y = player+" accuracy", col = 'time_class', scatter_kws={"color":"indigo","alpha":0.2,"s":10}, facet_kws=dict(sharex=False, sharey=False), col_wrap = 2)
-        st.pyplot(fig) 
-    else:
-        st.markdown("You did not played any games with accuracy analysis.")
+        st.write("No data available for the selected month. Please choose another month.")
