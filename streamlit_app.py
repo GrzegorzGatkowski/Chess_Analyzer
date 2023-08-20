@@ -1,4 +1,3 @@
-# Import statements should be organized alphabetically.
 import datetime
 import streamlit as st
 import seaborn as sns
@@ -7,60 +6,67 @@ from data_cleaner import ChessDataCleaner
 from data_visualizer import ChessDataVisualizer
 from fetch_games import ChessAPI
 
-# Set page configuration
-st.set_page_config(layout="wide")
+# Constants
+SEABORN_STYLE = "whitegrid"
+DEFAULT_USERNAMES = [
+    "Hikaru",
+    "GothamChess",
+    "DanielNaroditsky",
+    "nihalsarin",
+    "Polish_fighter3000",
+]
+PAGE_TITLE = "Chess Analysis"
+
 
 # Use underscores for variable naming for readability
 _lock = RendererAgg.lock
 
 # Set seaborn style
-sns.set_style("darkgrid")
+sns.set_style(SEABORN_STYLE)
 
-# Create columns for layout
-row0_spacer1, row0_1, row0_spacer2, row0_2, row0_spacer3 = st.columns((0.1, 2, 0.2, 0.6, 0.1))
+def main():
+    # Create a sidebar for buttons and player selection
+    st.sidebar.title("Chess Analysis Options")
 
-# Title of the app
-row0_1.title("Analyzing Chess.com Profile")
+    # Create columns for the main content
+    row0_spacer1, row0_1, row0_spacer2, row0_2, row0_spacer3 = st.columns((0.1, 2, 0.2, 0.6, 0.1))
 
-# Subheader with app creator's information
-with row0_2:
-    st.write("")
+    # Title of the app
+    row0_1.title("Analyzing Chess.com Profile")
 
-row0_2.subheader("Streamlit App by [Grzegorz Gątkowski](https://www.linkedin.com/in/grzegorzgatkowski/)")
+    # Subheader with app creator's information
+    with row0_2:
+        st.write("")
 
-# Create columns for the main content
-row1_spacer1, row1_1, row1_spacer2 = st.columns((0.1, 3.2, 0.1))
+    row0_2.subheader("Streamlit App by [Grzegorz Gątkowski](https://www.linkedin.com/in/grzegorzgatkowski/)")
 
-# Introduction and input instructions
-with row1_1:
-    st.markdown(
-        "Hey there! Welcome to the Chess Analysis App. This app analyzes data about your chess.com account and looks at the distribution of the opponents' ratings."
-    )
-    st.markdown(
-        "**To begin, please enter the [chess.com](https://www.chess.com/) username (or use one of the default usernames).** 👇 Note: It may take up to one minute to load data."
-    )
+    # Create columns for the main content
+    row1_spacer1, row1_1, row1_spacer2 = st.columns((0.1, 3.2, 0.1))
 
-# Create columns for user input
-row2_spacer1, row2_1, row2_spacer2 = st.columns((0.1, 3.2, 0.1))
-with row2_1:
+    # Introduction and input instructions
+    with row1_1:
+        st.markdown(
+            "Hey there! Welcome to the Chess Analysis App. This app analyzes data about your chess.com account and looks at the distribution of the opponents' ratings."
+        )
+        st.markdown(
+            "**To begin, please enter the [chess.com](https://www.chess.com/) username (or use one of the default usernames).** 👇"
+        )
+
+    # Create columns for user input
+    row2_spacer1, row2_1, row2_spacer2 = st.columns((0.1, 3.2, 0.1))
+
     # Default usernames and user input field
-    default_usernames = [
-        "Hikaru",
-        "GothamChess",
-        "DanielNaroditsky",
-        "nihalsarin",
-        "Polish_fighter3000",
-    ]
-    default_username = st.selectbox("Select a default username", default_usernames)
+    default_username = st.selectbox("Select a default username", DEFAULT_USERNAMES)
     st.markdown("**or**")
     user_input = st.text_input("Input your own username")
 
-    # Use a default username if the user didn't input one
-    if not user_input:
-        user_input = f"{default_username}"
-
     # Fetch player data and date-related variables
-    player_info = ChessAPI.fetch_player_data(user_input)
+    if not user_input:
+        player_name = default_username
+    else:
+        player_name = user_input
+
+    player_info = ChessAPI.fetch_player_data(player_name)
     joined_date = datetime.datetime.fromtimestamp(player_info['joined'])
     current_date = datetime.datetime.now()
     current_year = current_date.year
@@ -75,47 +81,76 @@ with row2_1:
         month_range = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
     month = st.selectbox("Select a month", month_range)
 
-# Define the player name
-player = user_input
+    # Create columns for header
+    line1_spacer1, line1_1, line1_spacer2 = st.columns((0.1, 3.2, 0.1))
 
-# Create columns for header
-line1_spacer1, line1_1, line1_spacer2 = st.columns((0.1, 3.2, 0.1))
+    with line1_1:
+        st.header("Analyzing the Opponents' Ratings Distribution of: **{}**".format(player_name))
 
-with line1_1:
-    st.header("Analyzing the Opponents' Ratings Distribution of: **{}**".format(player))
+    # Fetch player's game data for the selected year and month
+    df = ChessAPI.fetch_games(player_name, year, month)
 
-# Define the player name
-player_name = user_input
+    # Check if data is available
+    if not df.empty:
+        data_available = True
+        cleaner = ChessDataCleaner(df, player_name)
+        cleaned_data = cleaner.clean_data()
 
-# Fetch player's game data for the selected year and month
-df = ChessAPI.fetch_games(player_name, year, month)
+        # Create an instance of ChessDataVisualizer
+        visualizer = ChessDataVisualizer(cleaned_data, player_name)
 
-# Check if data is available
-if not df.empty:
-    data_available = True
-    cleaner = ChessDataCleaner(df, player_name)
-    cleaned_data = cleaner.clean_data()
-
-    # Create an instance of ChessDataVisualizer
-    visualizer = ChessDataVisualizer(cleaned_data, player_name)
-
-    st.write("")
-    row3_space1, row3_1, row3_space2, row3_2, row3_space3 = st.columns(
-        (0.1, 1, 0.1, 1, 0.1)
-    )
-else:
-    data_available = False
-
-st.write("")
-row3_space1, row3_1, row3_space2, row3_2, row3_space3 = st.columns(
-    (0.1, 1, 0.1, 1, 0.1)
-)
-
-with row3_1, _lock:
-    st.subheader("Overall Distribution")
-
-    if data_available:
-        # Visualize Win-Loss Distribution
-        visualizer.print_kde(x="opponent's rating", hue='time_class')
+        st.write("")
+        
+        row3_space1, row3_1, row3_space2, row3_2, row3_space3 = st.columns((0.1, 1, 0.1, 1, 0.1))
+        
     else:
-        st.write("No data available for the selected month. Please choose another month.")
+        data_available = False
+
+    # Create columns for the charts in the main content area
+    with row3_1, _lock:
+        ChessAPI.display_player_info(player_name)
+        st.subheader("Overall Distribution")
+
+        if data_available:
+            # Visualize Win-Loss Distribution
+            visualizer.print_kde(x="opponent's rating", hue='time_class', xlabel = 'Rating', ylabel = 'Density')
+        else:
+            st.write("No data available for the selected month. Please choose another month.")
+
+    with row3_2, _lock:
+        ChessAPI.display_player_stats(player_name)
+        st.subheader("Games by time control")
+        if data_available:
+            visualizer.print_distribution(column='time_class', xlabel = "Game type", ylabel = 'Count')
+        else:
+            st.markdown("We do not have information to find out about your games.")
+    # Create columns for header
+    line2_spacer1, line2_1, line2_spacer2 = st.columns((0.1, 3.2, 0.1))
+
+    with line2_1:
+        total_games = cleaned_data.end_time.count()
+        blitz_games = cleaned_data[cleaned_data.time_class == 'blitz'].shape[0]
+        rapid_games = cleaned_data[cleaned_data.time_class == 'rapid'].shape[0]
+        bullet_games = cleaned_data[cleaned_data.time_class == 'bullet'].shape[0]
+
+        st.header(f"Games: **{player_name}**")
+        st.markdown(f"It looks like {player_name} played a grand total of **{total_games}** games in {year}-{month}, including:")
+        st.markdown(f"- **{blitz_games}** blitz games,")
+        st.markdown(f"- **{rapid_games}** rapid game,")
+        st.markdown(f"- **{bullet_games}** bullet game,")
+    
+    row4_1, row4_space1 = st.columns((2,0.1))
+
+    with row4_1, _lock:
+        st.subheader("Performance")
+        visualizer.print_performance(data = cleaned_data)
+    
+    row5_1, row5_space1 = st.columns((2,0.1))
+
+    with row5_1, _lock:
+        st.subheader("Accuracy")
+        fig = sns.lmplot(data=cleaned_data, x = "opponent's rating", y = player_name+" accuracy", col = 'time_class', scatter_kws={"color":"indigo","alpha":0.2,"s":10}, facet_kws=dict(sharex=False, sharey=False), col_wrap = 2)
+        st.pyplot(fig)       
+
+if __name__ == "__main__":
+    main()
