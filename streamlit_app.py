@@ -9,9 +9,9 @@ from fetch_games import ChessAPI
 # Constants
 SEABORN_STYLE = "whitegrid"
 DEFAULT_USERNAMES = [
+    "DanielNaroditsky",
     "Hikaru",
     "GothamChess",
-    "DanielNaroditsky",
     "nihalsarin",
     "Polish_fighter3000",
 ]
@@ -25,9 +25,7 @@ _lock = RendererAgg.lock
 sns.set_style(SEABORN_STYLE)
 
 def main():
-    # Create a sidebar for buttons and player selection
-    st.sidebar.title("Chess Analysis Options")
-
+    
     # Create columns for the main content
     row0_spacer1, row0_1, row0_spacer2, row0_2, row0_spacer3 = st.columns((0.1, 2, 0.2, 0.6, 0.1))
 
