@@ -10,6 +10,11 @@ class ChessAPI:
 
     BASE_URL = "https://api.chess.com/pub"
 
+    # Define a user-agent header
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'
+    }
+
     @classmethod
     def fetch_games(cls, player_name, year, month):
         """
@@ -24,7 +29,8 @@ class ChessAPI:
         all_games = pd.DataFrame()
 
         try:
-            response = requests.get(url)
+            # Include the user-agent header in the request
+            response = requests.get(url, headers=cls.headers)
             response.raise_for_status()
             games_data = response.json().get('games', [])
 
@@ -48,7 +54,8 @@ class ChessAPI:
         url = f"{cls.BASE_URL}/player/{player_name}"
 
         try:
-            response = requests.get(url)
+            # Include the user-agent header in the request
+            response = requests.get(url, headers=cls.headers)
             response.raise_for_status()
             player_data = response.json()
             return player_data
@@ -65,7 +72,8 @@ class ChessAPI:
         :return: A dictionary containing data about the country.
         """
         try:
-            response = requests.get(country_url)
+            # Include the user-agent header in the request
+            response = requests.get(country_url, headers=cls.headers)
             response.raise_for_status()
             country_data = response.json()
             return country_data
@@ -85,7 +93,8 @@ class ChessAPI:
         player_stats = {}
 
         try:
-            response = requests.get(url)
+            # Include the user-agent header in the request
+            response = requests.get(url, headers=cls.headers)
             response.raise_for_status()
             player_stats = response.json()
         except requests.RequestException as e:
@@ -115,7 +124,7 @@ class ChessAPI:
 
         if player_info:
             st.write("Username: ", player_info['username'])
-            
+
             # Handle the case where 'country' is another API link
             if 'country' in player_info and player_info['country']:
                 country_data = cls.fetch_country_data(player_info['country'])
@@ -130,7 +139,6 @@ class ChessAPI:
             st.write("Status: ", player_info['status'])
             st.write("Joined Chess.com: ", datetime.datetime.fromtimestamp(player_info['joined']).strftime('%Y-%m-%d'))
             st.write("Last Online: ", datetime.datetime.fromtimestamp(player_info['last_online']).strftime('%Y-%m-%d %H:%M:%S'))
-            #st.write("League: ", player_info['league'])
         else:
             st.write("Player not found or error fetching data.")
 
@@ -157,5 +165,3 @@ class ChessAPI:
 
         else:
             st.write("Player statistics not found or error fetching data.")
-
-
