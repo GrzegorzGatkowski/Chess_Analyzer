@@ -28,6 +28,9 @@ class ChessDataCleaner:
         Drop unnecessary columns from the DataFrame.
         """
         self.dataframe.drop(columns=self.COLUMNS_TO_DROP, axis=1, inplace=True)
+        
+        if 'tournament' in self.dataframe.columns:
+            self.dataframe.drop(columns=['tournament'], axis=1, inplace=True)
 
     def calculate_ratings(self):
         """

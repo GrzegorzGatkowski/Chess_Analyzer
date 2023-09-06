@@ -16,17 +16,34 @@ class ChessAPI:
     }
 
     @classmethod
-    def fetch_games(cls, player_name, year, month):
+    def fetch_games(cls, player_name=None, year=None, month=None, url=None):
         """
-        Fetches and returns a DataFrame containing all games for a given year and month from a player's Chess.com game archive.
+        Fetches and returns a DataFrame containing games either based on player_name, year, and month or a provided URL.
 
-        :param player_name: The player's username on Chess.com.
-        :param year: The year for which to filter the games.
-        :param month: The month for which to filter the games.
-        :return: A pandas DataFrame containing the games for the specified year and month.
+        :param player_name: The player's username on Chess.com (optional).
+        :param year: The year for which to filter the games (optional).
+        :param month: The month for which to filter the games (optional).
+        :param url: The API URL to fetch games (optional, if provided, player_name, year, and month are ignored).
+        :return: A pandas DataFrame containing the games.
         """
+        if url:
+            return cls._fetch_data_from_url(url)
+
+        elif not player_name or not year or not month:
+            raise ValueError("Either provide player_name, year, and month or provide a valid URL.")
+
         url = f"{cls.BASE_URL}/player/{player_name}/games/{year}/{month}"
-        all_games = pd.DataFrame()
+        return cls._fetch_data_from_url(url)
+
+    @classmethod
+    def _fetch_data_from_url(cls, url):
+        """
+        Fetches and returns data from a provided URL.
+
+        :param url: The API URL to fetch data from.
+        :return: The fetched data.
+        """
+        data = None
 
         try:
             # Include the user-agent header in the request
@@ -35,13 +52,13 @@ class ChessAPI:
             games_data = response.json().get('games', [])
 
             if games_data:
-                all_games = pd.json_normalize(games_data, max_level=1)
+                data = pd.json_normalize(games_data, max_level=1)
         except requests.RequestException as e:
             cls._log_error(f"Error fetching games from URL {url}: {e}")
         except (KeyError, TypeError, ValueError) as e:
             cls._log_error(f"Error processing games data from URL {url}: {e}")
 
-        return all_games
+        return data
 
     @classmethod
     def fetch_player_data(cls, player_name):
@@ -165,3 +182,31 @@ class ChessAPI:
 
         else:
             st.write("Player statistics not found or error fetching data.")
+
+    @classmethod
+    def fetch_game_archives(cls, player_name):
+        """
+        Fetches and returns the game archives (list of available months) for a player from the Chess.com API.
+
+        :param player_name: The player's username on Chess.com.
+        :return: A list of available game archives (months) for the player.
+        """
+        url = f"{cls.BASE_URL}/player/{player_name}/games/archives"
+
+        try:
+            # Include the user-agent header in the request
+            response = requests.get(url, headers=cls.headers)
+            response.raise_for_status()
+            game_archives = response.json().get('archives', [])
+            return game_archives
+        except requests.RequestException as e:
+            cls._log_error(f"Error fetching game archives from URL {url}: {e}")
+            return []
+
+# Usage examples:
+df = ChessAPI.fetch_games(player_name="DanielNaroditsky", year=2014, month='03')
+print(df.columns)
+# ChessAPI.fetch_games(url="https://example.com/api/endpoint")
+# ChessAPI.display_player_info(player_name="example_player")
+# ChessAPI.display_player_stats(player_name="example_player")
+# ChessAPI.fetch_game_archives(player_name="example_player")
