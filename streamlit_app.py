@@ -1,5 +1,4 @@
 import streamlit as st
-import plotly.express as px
 import pandas as pd
 import datetime
 import warnings
@@ -50,6 +49,7 @@ def main():
 
     # Create columns for user input
     row2_spacer1, row2_1, row2_spacer2 = st.columns((0.1, 3.2, 0.1))
+
 
     # Default usernames and user input field
     default_username = st.selectbox("Select a default username", DEFAULT_USERNAMES)

@@ -1,6 +1,7 @@
-pandas
-streamlit
-requests
-matplotlib
-seaborn
-numpy
+pandas==2.1.1
+streamlit==1.27.0
+requests==2.31.0
+matplotlib==3.8.0
+seaborn==0.12.1
+numpy==1.26.0
+duckdb==0.8.1
