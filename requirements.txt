@@ -1,7 +1,7 @@
-pandas==2.1.1
-streamlit==1.27.0
-requests==2.31.0
-matplotlib==3.8.0
-seaborn==0.12.1
-numpy==1.26.0
-duckdb==0.8.1
+airflow-provider-duckdb==0.0.2
+astro-sdk-python==1.5.0
+duckdb==0.7.1
+minio==7.1.13
+pandas==1.5.3
+streamlit==1.23.0
+pytest
