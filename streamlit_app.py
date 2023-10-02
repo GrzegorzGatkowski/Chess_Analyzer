@@ -1,26 +1,25 @@
-import streamlit as st
-import plotly.express as px
-import pandas as pd
 import datetime
-import warnings
+import streamlit as st
+import seaborn as sns
+from matplotlib.backends.backend_agg import RendererAgg
 from data_cleaner import ChessDataCleaner
 from data_visualizer import ChessDataVisualizer
 from fetch_games import ChessAPI
-warnings.filterwarnings('ignore')
 
-st.set_page_config(page_title="Analyzing Chess.com Profile", page_icon=":chess_pawn:", layout="wide")
+# Constants
 SEABORN_STYLE = "whitegrid"
 DEFAULT_USERNAMES = [
     "DanielNaroditsky",
     "Hikaru",
-    "GothamChess",
     "nihalsarin",
-    "Polish_fighter3000",
+
 ]
+PAGE_TITLE = "Chess Analysis"
 
 
-st.title(" :chess_pawn: Chess.com profile stats")
-st.markdown('<style>div.block-container{padding-top:1rem;}</style>', unsafe_allow_html=True)
+
+# Set seaborn style
+sns.set_style(SEABORN_STYLE)
 
 def main():
     
@@ -68,11 +67,7 @@ def main():
     current_year = current_date.year
     current_month = current_date.month
     year_range = list(range(current_year, joined_date.year - 1, -1))
-    col1, col2 = st.columns((2))
-    with col1:
-        date1 = st.date_input("Start Date", min_value=joined_date, max_value=current_date)
-    with col2:
-        date1 = st.date_input("End Date", min_value=joined_date, max_value=current_date)
+
     year = st.selectbox("Select a year", year_range)
     if year == current_year:
         month_range = ["{:02d}".format(i) for i in range(current_month, 0, -1)]
@@ -81,6 +76,76 @@ def main():
         month_range = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
     month = st.selectbox("Select a month", month_range)
 
+    # Create columns for header
+    line1_spacer1, line1_1, line1_spacer2 = st.columns((0.1, 3.2, 0.1))
+
+    with line1_1:
+        st.header("Analyzing the Opponents' Ratings Distribution of: **{}**".format(player_name))
+
+    # Fetch player's game data for the selected year and month
+    df = ChessAPI.fetch_games(player_name, year, month)
+
+    # Check if data is available
+    if not df.empty:
+        data_available = True
+        cleaner = ChessDataCleaner(df, player_name)
+        cleaned_data = cleaner.clean_data()
+
+        # Create an instance of ChessDataVisualizer
+        visualizer = ChessDataVisualizer(cleaned_data, player_name)
+
+        st.write("")
+        
+        row3_space1, row3_1, row3_space2, row3_2, row3_space3 = st.columns((0.1, 1, 0.1, 1, 0.1))
+        
+    else:
+        data_available = False
+
+    # Create columns for the charts in the main content area
+    with row3_1:
+        ChessAPI.display_player_info(player_name)
+        st.subheader("Overall Distribution")
+
+        if data_available:
+            # Visualize Win-Loss Distribution
+            visualizer.print_kde(x="opponent's rating", hue='time_class', xlabel = 'Rating', ylabel = 'Density')
+        else:
+            st.write("No data available for the selected month. Please choose another month.")
+
+    with row3_2:
+        ChessAPI.display_player_stats(player_name)
+        st.subheader("Games by time control")
+        if data_available:
+            visualizer.print_distribution(column='time_class', xlabel = "Game type", ylabel = 'Count')
+        else:
+            st.markdown("We do not have information to find out about your games.")
+    # Create columns for header
+    line2_spacer1, line2_1, line2_spacer2 = st.columns((0.1, 3.2, 0.1))
+
+    with line2_1:
+        total_games = cleaned_data.end_time.count()
+        blitz_games = cleaned_data[cleaned_data.time_class == 'blitz'].shape[0]
+        rapid_games = cleaned_data[cleaned_data.time_class == 'rapid'].shape[0]
+        bullet_games = cleaned_data[cleaned_data.time_class == 'bullet'].shape[0]
+
+        st.header(f"Games: **{player_name}**")
+        st.markdown(f"It looks like {player_name} played a grand total of **{total_games}** games in {year}-{month}, including:")
+        st.markdown(f"- **{blitz_games}** blitz games,")
+        st.markdown(f"- **{rapid_games}** rapid game,")
+        st.markdown(f"- **{bullet_games}** bullet game,")
+    
+    row4_1, row4_space1 = st.columns((2,0.1))
+
+    with row4_1:
+        st.subheader("Performance")
+        visualizer.print_performance(data = cleaned_data)
+    
+    row5_1, row5_space1 = st.columns((2,0.1))
+
+    with row5_1:
+        st.subheader("Accuracy")
+        fig = sns.lmplot(data=cleaned_data, x = "opponent's rating", y = player_name+" accuracy", col = 'time_class', scatter_kws={"color":"indigo","alpha":0.2,"s":10}, facet_kws=dict(sharex=False, sharey=False), col_wrap = 2)
+        st.pyplot(fig)       
+
 if __name__ == "__main__":
     main()
-    
